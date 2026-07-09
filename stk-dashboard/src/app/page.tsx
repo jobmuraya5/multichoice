@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ArrowRightLeft, CheckCircle2, Clock, XCircle, Power } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Clock, XCircle, Power, Plus, Activity, Download } from "lucide-react";
 import { clsx } from "clsx";
+import BatchPaymentModal from "@/components/BatchPaymentModal";
 
 export default function Dashboard() {
   const [autoProcess, setAutoProcess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // Fetch initial setting
     fetch("/api/settings")
       .then((res) => res.json())
       .then((data) => {
@@ -25,7 +26,7 @@ export default function Dashboard() {
 
   const toggleAutomation = async () => {
     const newState = !autoProcess;
-    setAutoProcess(newState); // Optimistic UI update
+    setAutoProcess(newState);
 
     try {
       await fetch("/api/settings", {
@@ -35,105 +36,144 @@ export default function Dashboard() {
       });
     } catch (err) {
       console.error("Failed to update settings", err);
-      setAutoProcess(!newState); // Revert on failure
+      setAutoProcess(!newState);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen p-8 lg:p-12">
-      <header className="mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">
-            Finaswift STK
-          </h1>
-          <p className="text-slate-400 mt-2">Real-time STK Push Dashboard</p>
-        </div>
+    <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+      
+      {/* Center Main Content */}
+      <div className="flex-1 flex flex-col gap-6">
         
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={toggleAutomation}
-            disabled={loading}
-            className={clsx(
-              "px-4 py-2 rounded-full flex items-center gap-2 text-sm shadow-lg transition-all border",
-              autoProcess 
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20" 
-                : "glass text-slate-300 hover:bg-white/10"
-            )}
-          >
-            <Power className="w-4 h-4" />
-            <span className="font-medium tracking-wide">
+        {/* Header / Actions */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl card-shadow border border-slate-100">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">STK Overview</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage and track your STK pushes</p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={toggleAutomation}
+              disabled={loading}
+              className={clsx(
+                "px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors border",
+                autoProcess 
+                  ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" 
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Power className="w-4 h-4" />
               Automation: {autoProcess ? "ON" : "OFF"}
-            </span>
-          </button>
+            </button>
+
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Batch Push
+            </button>
+          </div>
         </div>
-      </header>
 
-      <main className="flex-1 space-y-8">
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard 
-            title="Total Revenue" 
-            value="KES 0.00" 
-            icon={<CheckCircle2 className="w-5 h-5 text-emerald-400" />} 
-          />
-          <MetricCard 
-            title="Pending Requests" 
-            value="0" 
-            icon={<Clock className="w-5 h-5 text-amber-400" />} 
-          />
-          <MetricCard 
-            title="Failed Transactions" 
-            value="0" 
-            icon={<XCircle className="w-5 h-5 text-rose-400" />} 
-          />
-          <MetricCard 
-            title="Total Processed" 
-            value="0" 
-            icon={<ArrowRightLeft className="w-5 h-5 text-blue-400" />} 
-          />
-        </section>
-
-        <section className="glass rounded-2xl p-6 hover-lift">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            Recent Transactions
-          </h2>
+        {/* Transactions Table */}
+        <div className="bg-white rounded-2xl p-6 card-shadow border border-slate-100 flex-1">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold text-slate-800">Recent Transactions</h2>
+            <button className="text-sm text-blue-600 font-medium hover:text-blue-700 flex items-center gap-1">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          </div>
+          
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400 text-sm">
-                  <th className="py-4 px-4 font-medium">Reference</th>
-                  <th className="py-4 px-4 font-medium">MSISDN</th>
-                  <th className="py-4 px-4 font-medium">Amount</th>
-                  <th className="py-4 px-4 font-medium">Status</th>
-                  <th className="py-4 px-4 font-medium">Time</th>
+                <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                  <th className="py-3 px-4 font-semibold">Reference</th>
+                  <th className="py-3 px-4 font-semibold">MSISDN</th>
+                  <th className="py-3 px-4 font-semibold">Amount</th>
+                  <th className="py-3 px-4 font-semibold">Status</th>
+                  <th className="py-3 px-4 font-semibold">Time</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
-                <tr className="border-b border-white/5 transition-colors hover:bg-white/5">
-                  <td className="py-4 px-4 text-slate-400 italic">No transactions yet</td>
-                  <td className="py-4 px-4 text-slate-500">--</td>
-                  <td className="py-4 px-4 text-slate-500">--</td>
-                  <td className="py-4 px-4 text-slate-500">--</td>
-                  <td className="py-4 px-4 text-slate-500">--</td>
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="py-4 px-4 text-slate-500 italic" colSpan={5}>No transactions yet</td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </section>
-      </main>
+        </div>
+
+      </div>
+
+      {/* Right Column Metrics */}
+      <div className="w-full lg:w-72 flex flex-col gap-4 shrink-0">
+        <MetricCard 
+          title="Total Revenue" 
+          value="KES 0.00" 
+          trend="+0.00%" 
+          trendPositive={true}
+          icon={<CheckCircle2 className="w-5 h-5 text-emerald-500" />} 
+        />
+        <MetricCard 
+          title="Pending Requests" 
+          value="0" 
+          trend="Waiting to process" 
+          trendPositive={true}
+          icon={<Clock className="w-5 h-5 text-blue-500" />} 
+        />
+        <MetricCard 
+          title="Failed Transactions" 
+          value="0" 
+          trend="-0.00%" 
+          trendPositive={false}
+          icon={<XCircle className="w-5 h-5 text-rose-500" />} 
+        />
+        <MetricCard 
+          title="Total Processed" 
+          value="0" 
+          trend="+0.00%" 
+          trendPositive={true}
+          icon={<Activity className="w-5 h-5 text-indigo-500" />} 
+        />
+      </div>
+
+      <BatchPaymentModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => {
+          alert("Batch successfully queued!");
+        }}
+      />
     </div>
   );
 }
 
-function MetricCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
+function MetricCard({ title, value, trend, trendPositive, icon }: { title: string; value: string; trend: string; trendPositive: boolean; icon: React.ReactNode }) {
   return (
-    <div className="glass rounded-2xl p-6 flex flex-col justify-between hover-lift">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-slate-400 font-medium text-sm">{title}</h3>
-        <div className="p-2 bg-white/5 rounded-xl shadow-inner shadow-white/5 border border-white/5">
+    <div className="bg-white rounded-2xl p-5 card-shadow border border-slate-100 flex flex-col gap-3">
+      <div className="flex justify-between items-start">
+        <h3 className="text-slate-500 font-medium text-sm">{title}</h3>
+        <div className="p-1.5 bg-slate-50 rounded-lg">
           {icon}
         </div>
       </div>
-      <p className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">{value}</p>
+      <div>
+        <p className="text-2xl font-bold text-slate-800">{value}</p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className={clsx(
+            "text-xs font-semibold px-2 py-0.5 rounded-full",
+            trendPositive ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+          )}>
+            {trend}
+          </span>
+          <span className="text-xs text-slate-400">Since last month</span>
+        </div>
+      </div>
     </div>
   );
 }
