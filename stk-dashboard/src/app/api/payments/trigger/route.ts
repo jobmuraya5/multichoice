@@ -11,6 +11,17 @@ export async function POST() {
   }
 
   try {
+    // 0. Check if automation is enabled
+    const { data: settings } = await supabaseAdmin
+      .from("settings")
+      .select("auto_process_enabled")
+      .eq("id", 1)
+      .single();
+
+    if (!settings || !settings.auto_process_enabled) {
+      return NextResponse.json({ message: "Automation is currently disabled." });
+    }
+
     // 1. Fetch pending transactions
     const { data: pendingTx, error: fetchError } = await supabaseAdmin
       .from("transactions")

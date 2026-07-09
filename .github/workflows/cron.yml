@@ -1,0 +1,16 @@
+name: Automation Cron
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # Runs every 5 minutes
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  ping_api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Trigger API
+        run: |
+          curl -X POST ${{ secrets.API_TRIGGER_URL }} \
+          -H "Content-Type: application/json" \
+          -d '{}'

@@ -1,6 +1,44 @@
-import { ArrowRightLeft, CheckCircle2, Clock, XCircle } from "lucide-react";
+"use client";
+import { useEffect, useState } from "react";
+import { ArrowRightLeft, CheckCircle2, Clock, XCircle, Power } from "lucide-react";
+import { clsx } from "clsx";
 
 export default function Dashboard() {
+  const [autoProcess, setAutoProcess] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch initial setting
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.auto_process_enabled !== undefined) {
+          setAutoProcess(data.auto_process_enabled);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch settings", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const toggleAutomation = async () => {
+    const newState = !autoProcess;
+    setAutoProcess(newState); // Optimistic UI update
+
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auto_process_enabled: newState }),
+      });
+    } catch (err) {
+      console.error("Failed to update settings", err);
+      setAutoProcess(!newState); // Revert on failure
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen p-8 lg:p-12">
       <header className="mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -10,12 +48,23 @@ export default function Dashboard() {
           </h1>
           <p className="text-slate-400 mt-2">Real-time STK Push Dashboard</p>
         </div>
-        <div className="glass px-4 py-2 rounded-full flex items-center gap-3 text-sm text-slate-300 shadow-lg">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-          </span>
-          <span className="font-medium tracking-wide">Cron Active (2 min)</span>
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={toggleAutomation}
+            disabled={loading}
+            className={clsx(
+              "px-4 py-2 rounded-full flex items-center gap-2 text-sm shadow-lg transition-all border",
+              autoProcess 
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20" 
+                : "glass text-slate-300 hover:bg-white/10"
+            )}
+          >
+            <Power className="w-4 h-4" />
+            <span className="font-medium tracking-wide">
+              Automation: {autoProcess ? "ON" : "OFF"}
+            </span>
+          </button>
         </div>
       </header>
 
@@ -59,7 +108,6 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {/* Fallback empty state for now */}
                 <tr className="border-b border-white/5 transition-colors hover:bg-white/5">
                   <td className="py-4 px-4 text-slate-400 italic">No transactions yet</td>
                   <td className="py-4 px-4 text-slate-500">--</td>
